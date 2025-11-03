@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý điểm - Hệ thống quản lý lớp học</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>Quản lý lớp học</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <span>🏠</span> Trang chủ
+                </a>
+                <a href="students.html" class="nav-item">
+                    <span>👥</span> Quản lý sinh viên
+                </a>
+                <a href="documents.html" class="nav-item">
+                    <span>📚</span> Tài liệu học tập
+                </a>
+                <a href="attendance.html" class="nav-item">
+                    <span>📅</span> Điểm danh
+                </a>
+                <a href="grades.html" class="nav-item active">
+                    <span>🧮</span> Điểm số
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="logoutBtn" class="btn btn-secondary">Đăng xuất</button>
+            </div>
+        </aside>
+        
+        <main class="main-content">
+            <header class="page-header">
+                <h1>Quản lý điểm số</h1>
+                <div class="user-info">
+                    <span id="userName"></span>
+                </div>
+            </header>
+            
+            <div class="content">
+                <div class="card">
+                    <h2>Bảng điểm</h2>
+                    <table id="gradesTable">
+                        <thead>
+                            <tr>
+                                <th>Họ tên</th>
+                                <th>MSSV</th>
+                                <th>Điểm giữa kỳ</th>
+                                <th>Điểm cuối kỳ</th>
+                                <th>Điểm trung bình</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="gradesTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Modal for editing grades -->
+    <div id="gradeModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Nhập điểm</h2>
+            <form id="gradeForm">
+                <input type="hidden" id="gradeStudentId">
+                <div class="form-group">
+                    <label>Sinh viên</label>
+                    <p id="gradeStudentName"></p>
+                </div>
+                <div class="form-group">
+                    <label for="midtermGrade">Điểm giữa kỳ (0-10)</label>
+                    <input type="number" id="midtermGrade" min="0" max="10" step="0.1" required>
+                </div>
+                <div class="form-group">
+                    <label for="finalGrade">Điểm cuối kỳ (0-10)</label>
+                    <input type="number" id="finalGrade" min="0" max="10" step="0.1" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Lưu điểm</button>
+            </form>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+    <script>
+        checkAuth();
+        
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        document.getElementById('userName').textContent = currentUser.fullname;
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+        
+        let students = JSON.parse(localStorage.getItem('students')) || [];
+        let grades = JSON.parse(localStorage.getItem('grades')) || [];
+        
+        const modal = document.getElementById('gradeModal');
+        const closeBtn = document.getElementsByClassName('close')[0];
+        
+        closeBtn.onclick = function() {
+            modal.style.display = 'none';
+        };
+        
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        };
+        
+        function calculateAverage(midterm, final) {
+            return ((midterm * 0.4) + (final * 0.6)).toFixed(2);
+        }
+        
+        function renderGrades() {
+            const tbody = document.getElementById('gradesTableBody');
+            tbody.innerHTML = '';
+            
+            students.forEach(student => {
+                const grade = grades.find(g => g.studentId === student.id) || {
+                    studentId: student.id,
+                    midterm: 0,
+                    final: 0
+                };
+                
+                const average = calculateAverage(grade.midterm, grade.final);
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${student.name}</td>
+                    <td>${student.id}</td>
+                    <td>${grade.midterm || '-'}</td>
+                    <td>${grade.final || '-'}</td>
+                    <td><strong>${grade.midterm && grade.final ? average : '-'}</strong></td>
+                    <td>
+                        <button class="btn btn-small btn-edit" onclick="editGrade(${student.id})">Nhập điểm</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        
+        window.editGrade = function(studentId) {
+            const student = students.find(s => s.id === studentId);
+            const grade = grades.find(g => g.studentId === studentId) || {
+                studentId: studentId,
+                midterm: 0,
+                final: 0
+            };
+            
+            document.getElementById('gradeStudentId').value = studentId;
+            document.getElementById('gradeStudentName').textContent = `${student.name} (${student.id})`;
+            document.getElementById('midtermGrade').value = grade.midterm || '';
+            document.getElementById('finalGrade').value = grade.final || '';
+            
+            modal.style.display = 'block';
+        };
+        
+        document.getElementById('gradeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const studentId = parseInt(document.getElementById('gradeStudentId').value);
+            const midterm = parseFloat(document.getElementById('midtermGrade').value);
+            const final = parseFloat(document.getElementById('finalGrade').value);
+            
+            const existingGradeIndex = grades.findIndex(g => g.studentId === studentId);
+            
+            if (existingGradeIndex !== -1) {
+                grades[existingGradeIndex] = { studentId, midterm, final };
+            } else {
+                grades.push({ studentId, midterm, final });
+            }
+            
+            localStorage.setItem('grades', JSON.stringify(grades));
+            renderGrades();
+            modal.style.display = 'none';
+            alert('Lưu điểm thành công!');
+        });
+        
+        renderGrades();
+    </script>
+</body>
+</html>

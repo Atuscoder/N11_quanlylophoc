@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng ký - Hệ thống quản lý lớp học</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="auth-page">
+    <div class="auth-container">
+        <div class="auth-card">
+            <h1>Đăng ký tài khoản mới</h1>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="fullname">Họ và tên</label>
+                    <input type="text" id="fullname" name="fullname" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Mật khẩu</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Xác nhận mật khẩu</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" required>
+                </div>
+                <div class="form-group">
+                    <label for="role">Vai trò</label>
+                    <select id="role" name="role" required>
+                        <option value="">Chọn vai trò</option>
+                        <option value="student">Sinh viên</option>
+                        <option value="teacher">Giảng viên</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Đăng ký</button>
+                <div class="auth-footer">
+                    <p>Đã có tài khoản? <a href="index.html">Đăng nhập</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script src="app.js"></script>
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const fullname = document.getElementById('fullname').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const role = document.getElementById('role').value;
+            
+            if (!fullname || !email || !password || !confirmPassword || !role) {
+                alert('Vui lòng điền đầy đủ thông tin');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                alert('Mật khẩu không trùng khớp');
+                return;
+            }
+            
+            const users = JSON.parse(localStorage.getItem('users')) || [];
+            
+            if (users.find(u => u.email === email)) {
+                alert('Email đã được sử dụng');
+                return;
+            }
+            
+            const newUser = {
+                id: Date.now(),
+                fullname,
+                email,
+                username: email,
+                password,
+                role
+            };
+            
+            users.push(newUser);
+            localStorage.setItem('users', JSON.stringify(users));
+            
+            alert('Đăng ký thành công!');
+            window.location.href = 'index.html';
+        });
+    </script>
+</body>
+</html>

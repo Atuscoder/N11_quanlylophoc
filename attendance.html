@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Điểm danh - Hệ thống quản lý lớp học</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>Quản lý lớp học</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <span>🏠</span> Trang chủ
+                </a>
+                <a href="students.html" class="nav-item">
+                    <span>👥</span> Quản lý sinh viên
+                </a>
+                <a href="documents.html" class="nav-item">
+                    <span>📚</span> Tài liệu học tập
+                </a>
+                <a href="attendance.html" class="nav-item active">
+                    <span>📅</span> Điểm danh
+                </a>
+                <a href="grades.html" class="nav-item">
+                    <span>🧮</span> Điểm số
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="logoutBtn" class="btn btn-secondary">Đăng xuất</button>
+            </div>
+        </aside>
+        
+        <main class="main-content">
+            <header class="page-header">
+                <h1>Quản lý điểm danh</h1>
+                <div class="user-info">
+                    <span id="userName"></span>
+                </div>
+            </header>
+            
+            <div class="content">
+                <div class="card">
+                    <h2>Tạo buổi điểm danh mới</h2>
+                    <form id="attendanceForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="attendanceDate">Ngày</label>
+                                <input type="date" id="attendanceDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="attendanceSubject">Môn học</label>
+                                <input type="text" id="attendanceSubject" required>
+                            </div>
+                        </div>
+                        <button type="button" id="createAttendanceBtn" class="btn btn-primary">Tạo buổi điểm danh</button>
+                    </form>
+                </div>
+                
+                <div class="card" id="attendanceListCard" style="display: none;">
+                    <h2>Điểm danh sinh viên</h2>
+                    <div id="attendanceList"></div>
+                    <button type="button" id="saveAttendanceBtn" class="btn btn-success">Lưu điểm danh</button>
+                </div>
+                
+                <div class="card">
+                    <h2>Lịch sử điểm danh</h2>
+                    <table id="attendanceHistoryTable">
+                        <thead>
+                            <tr>
+                                <th>Ngày</th>
+                                <th>Môn học</th>
+                                <th>Có mặt</th>
+                                <th>Vắng</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceHistoryBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="app.js"></script>
+    <script>
+        checkAuth();
+        
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        document.getElementById('userName').textContent = currentUser.fullname;
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+        
+        let students = JSON.parse(localStorage.getItem('students')) || [];
+        let attendanceRecords = JSON.parse(localStorage.getItem('attendance')) || [];
+        let currentAttendance = {};
+        
+        document.getElementById('attendanceDate').valueAsDate = new Date();
+        
+        function renderAttendanceHistory() {
+            const tbody = document.getElementById('attendanceHistoryBody');
+            tbody.innerHTML = '';
+            
+            attendanceRecords.forEach(record => {
+                const present = Object.values(record.students).filter(s => s).length;
+                const absent = Object.values(record.students).filter(s => !s).length;
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${new Date(record.date).toLocaleDateString('vi-VN')}</td>
+                    <td>${record.subject}</td>
+                    <td>${present}</td>
+                    <td>${absent}</td>
+                    <td>
+                        <button class="btn btn-small btn-primary" onclick="viewAttendance(${record.id})">Xem</button>
+                        <button class="btn btn-small btn-danger" onclick="deleteAttendance(${record.id})">Xóa</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        
+        document.getElementById('createAttendanceBtn').addEventListener('click', function() {
+            const date = document.getElementById('attendanceDate').value;
+            const subject = document.getElementById('attendanceSubject').value;
+            
+            if (!date || !subject) {
+                alert('Vui lòng điền đầy đủ thông tin');
+                return;
+            }
+            
+            currentAttendance = {
+                id: Date.now(),
+                date: date,
+                subject: subject,
+                students: {}
+            };
+            
+            const attendanceList = document.getElementById('attendanceList');
+            attendanceList.innerHTML = '';
+            
+            students.forEach(student => {
+                const div = document.createElement('div');
+                div.className = 'attendance-item';
+                div.innerHTML = `
+                    <label>
+                        <input type="checkbox" data-student-id="${student.id}" checked>
+                        ${student.name} (${student.id})
+                    </label>
+                `;
+                attendanceList.appendChild(div);
+                currentAttendance.students[student.id] = true;
+            });
+            
+            document.getElementById('attendanceListCard').style.display = 'block';
+        });
+        
+        document.getElementById('saveAttendanceBtn').addEventListener('click', function() {
+            const checkboxes = document.querySelectorAll('#attendanceList input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                const studentId = cb.getAttribute('data-student-id');
+                currentAttendance.students[studentId] = cb.checked;
+            });
+            
+            attendanceRecords.push(currentAttendance);
+            localStorage.setItem('attendance', JSON.stringify(attendanceRecords));
+            
+            alert('Lưu điểm danh thành công!');
+            document.getElementById('attendanceListCard').style.display = 'none';
+            document.getElementById('attendanceForm').reset();
+            document.getElementById('attendanceDate').valueAsDate = new Date();
+            renderAttendanceHistory();
+        });
+        
+        window.viewAttendance = function(id) {
+            const record = attendanceRecords.find(r => r.id === id);
+            if (record) {
+                let message = `Điểm danh ngày ${new Date(record.date).toLocaleDateString('vi-VN')} - ${record.subject}\n\n`;
+                message += 'Có mặt:\n';
+                Object.keys(record.students).forEach(studentId => {
+                    const student = students.find(s => s.id == studentId);
+                    if (student && record.students[studentId]) {
+                        message += `- ${student.name} (${student.id})\n`;
+                    }
+                });
+                message += '\nVắng:\n';
+                Object.keys(record.students).forEach(studentId => {
+                    const student = students.find(s => s.id == studentId);
+                    if (student && !record.students[studentId]) {
+                        message += `- ${student.name} (${student.id})\n`;
+                    }
+                });
+                alert(message);
+            }
+        };
+        
+        window.deleteAttendance = function(id) {
+            if (confirm('Bạn có chắc muốn xóa buổi điểm danh này?')) {
+                attendanceRecords = attendanceRecords.filter(r => r.id !== id);
+                localStorage.setItem('attendance', JSON.stringify(attendanceRecords));
+                renderAttendanceHistory();
+            }
+        };
+        
+        renderAttendanceHistory();
+    </script>
+</body>
+</html>

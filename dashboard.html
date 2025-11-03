@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trang chủ - Hệ thống quản lý lớp học</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>Quản lý lớp học</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item active">
+                    <span>🏠</span> Trang chủ
+                </a>
+                <a href="students.html" class="nav-item">
+                    <span>👥</span> Quản lý sinh viên
+                </a>
+                <a href="documents.html" class="nav-item">
+                    <span>📚</span> Tài liệu học tập
+                </a>
+                <a href="attendance.html" class="nav-item">
+                    <span>📅</span> Điểm danh
+                </a>
+                <a href="grades.html" class="nav-item">
+                    <span>🧮</span> Điểm số
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="logoutBtn" class="btn btn-secondary">Đăng xuất</button>
+            </div>
+        </aside>
+        
+        <main class="main-content">
+            <header class="page-header">
+                <h1>Trang chủ / Dashboard</h1>
+                <div class="user-info">
+                    <span id="userName"></span>
+                </div>
+            </header>
+            
+            <div class="content">
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <div class="card-icon">👥</div>
+                        <div class="card-content">
+                            <h3>Sinh viên</h3>
+                            <p class="card-number" id="studentCount">0</p>
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-card">
+                        <div class="card-icon">📚</div>
+                        <div class="card-content">
+                            <h3>Tài liệu</h3>
+                            <p class="card-number" id="documentCount">0</p>
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-card">
+                        <div class="card-icon">📅</div>
+                        <div class="card-content">
+                            <h3>Buổi điểm danh</h3>
+                            <p class="card-number" id="attendanceCount">0</p>
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-card">
+                        <div class="card-icon">🧮</div>
+                        <div class="card-content">
+                            <h3>Điểm số</h3>
+                            <p class="card-number" id="gradeCount">0</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="welcome-section">
+                    <h2>Chào mừng đến với hệ thống quản lý lớp học</h2>
+                    <p>Sử dụng menu bên trái để điều hướng đến các chức năng quản lý.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="app.js"></script>
+    <script>
+        checkAuth();
+        
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        document.getElementById('userName').textContent = currentUser.fullname;
+        
+        // Update dashboard statistics
+        const students = JSON.parse(localStorage.getItem('students')) || [];
+        const documents = JSON.parse(localStorage.getItem('documents')) || [];
+        const attendance = JSON.parse(localStorage.getItem('attendance')) || [];
+        const grades = JSON.parse(localStorage.getItem('grades')) || [];
+        
+        document.getElementById('studentCount').textContent = students.length;
+        document.getElementById('documentCount').textContent = documents.length;
+        document.getElementById('attendanceCount').textContent = attendance.length;
+        document.getElementById('gradeCount').textContent = grades.length;
+        
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+    </script>
+</body>
+</html>

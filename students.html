@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý sinh viên - Hệ thống quản lý lớp học</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>Quản lý lớp học</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <span>🏠</span> Trang chủ
+                </a>
+                <a href="students.html" class="nav-item active">
+                    <span>👥</span> Quản lý sinh viên
+                </a>
+                <a href="documents.html" class="nav-item">
+                    <span>📚</span> Tài liệu học tập
+                </a>
+                <a href="attendance.html" class="nav-item">
+                    <span>📅</span> Điểm danh
+                </a>
+                <a href="grades.html" class="nav-item">
+                    <span>🧮</span> Điểm số
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="logoutBtn" class="btn btn-secondary">Đăng xuất</button>
+            </div>
+        </aside>
+        
+        <main class="main-content">
+            <header class="page-header">
+                <h1>Quản lý sinh viên</h1>
+                <div class="user-info">
+                    <span id="userName"></span>
+                </div>
+            </header>
+            
+            <div class="content">
+                <div class="card">
+                    <h2>Thêm sinh viên mới</h2>
+                    <form id="studentForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="studentName">Họ và tên</label>
+                                <input type="text" id="studentName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="studentId">MSSV</label>
+                                <input type="text" id="studentId" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="studentClass">Lớp</label>
+                                <input type="text" id="studentClass" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="studentEmail">Email</label>
+                                <input type="email" id="studentEmail" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Thêm sinh viên</button>
+                    </form>
+                </div>
+                
+                <div class="card">
+                    <h2>Danh sách sinh viên</h2>
+                    <table id="studentsTable">
+                        <thead>
+                            <tr>
+                                <th>Họ tên</th>
+                                <th>MSSV</th>
+                                <th>Lớp</th>
+                                <th>Email</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentsTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="app.js"></script>
+    <script>
+        checkAuth();
+        
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        document.getElementById('userName').textContent = currentUser.fullname;
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+        
+        let students = JSON.parse(localStorage.getItem('students')) || [];
+        let editingId = null;
+        
+        function renderStudents() {
+            const tbody = document.getElementById('studentsTableBody');
+            tbody.innerHTML = '';
+            
+            students.forEach(student => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${student.name}</td>
+                    <td>${student.id}</td>
+                    <td>${student.class}</td>
+                    <td>${student.email}</td>
+                    <td>
+                        <button class="btn btn-small btn-edit" onclick="editStudent(${student.id})">Sửa</button>
+                        <button class="btn btn-small btn-danger" onclick="deleteStudent(${student.id})">Xóa</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        
+        document.getElementById('studentForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('studentName').value;
+            const id = document.getElementById('studentId').value;
+            const studentClass = document.getElementById('studentClass').value;
+            const email = document.getElementById('studentEmail').value;
+            
+            if (editingId) {
+                const index = students.findIndex(s => s.id === editingId);
+                students[index] = { id: editingId, name, class: studentClass, email };
+                editingId = null;
+            } else {
+                const newStudent = {
+                    id: Date.now(),
+                    name,
+                    class: studentClass,
+                    email
+                };
+                students.push(newStudent);
+            }
+            
+            localStorage.setItem('students', JSON.stringify(students));
+            renderStudents();
+            this.reset();
+        });
+        
+        window.editStudent = function(id) {
+            const student = students.find(s => s.id === id);
+            if (student) {
+                document.getElementById('studentName').value = student.name;
+                document.getElementById('studentId').value = student.id;
+                document.getElementById('studentClass').value = student.class;
+                document.getElementById('studentEmail').value = student.email;
+                editingId = id;
+            }
+        };
+        
+        window.deleteStudent = function(id) {
+            if (confirm('Bạn có chắc muốn xóa sinh viên này?')) {
+                students = students.filter(s => s.id !== id);
+                localStorage.setItem('students', JSON.stringify(students));
+                renderStudents();
+            }
+        };
+        
+        renderStudents();
+    </script>
+</body>
+</html>
